@@ -1,0 +1,168 @@
+version: 2.1
+
+orbs:
+  aws-cli: circleci/aws-cli@4.1.3
+  python: circleci/python@2.1.1
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+  gh: circleci/github-cli@2.2.0
+
+commands:
+  instantiate_aws_accounts_locally:
+    parameters:
+      profile:
+        type: string
+    steps:
+      - run:
+          name: Instantiate AWS keys and profiles
+          command: npx @<your-company>/acp --file aws/profiles.yml
+      - run:
+          name: Change profile name
+          command: |
+            sed -i 's/profile default/default/' ~/.aws/config
+      - aws-cli/setup:
+          profile_name: <<parameters.profile>>
+
+  install_aws_cdk:
+    steps:
+      - run:
+          name: Install AWS CDK
+          command: sudo npm install -g aws-cdk@2.160.0
+  install_dotenv:
+    steps:
+      - run:
+          name: Install Python Dotenv CLI
+          command: pip install "python-dotenv[cli]"
+
+jobs:
+  deploy-all:
+    parameters:
+      profile:
+        type: string
+      environment:
+        type: string
+    docker:
+      - image: cimg/python:3.11.8-node
+    steps:
+      - checkout
+      - instantiate_aws_accounts_locally:
+          profile: << parameters.profile >>
+      - install_aws_cdk
+      - install_dotenv
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Deploy the infrastructure
+          command: |
+            cdk bootstrap --profile << parameters.profile >>
+            cdk deploy --profile << parameters.profile >> --all --require-approval never
+          environment:
+            ENVIRONMENT: << parameters.environment >>
+
+  deploy-stacks:
+    parameters:
+      profile:
+        type: string
+      environment:
+        type: string
+      stacks:
+        type: string
+    docker:
+      - image: cimg/python:3.11.8-node
+    steps:
+      - checkout
+      - instantiate_aws_accounts_locally:
+          profile: << parameters.profile >>
+      - install_aws_cdk
+      - install_dotenv
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          name: Deploy the infrastructure
+          command: |
+            cdk bootstrap --profile << parameters.profile >>
+            cdk deploy << parameters.stacks >> --profile << parameters.profile >> --require-approval never
+          environment:
+            ENVIRONMENT: << parameters.environment >>
+
+workflows:
+  main:
+    jobs:
+      - deploy-stacks:
+          name: deploy-infra-uat
+          profile: enogen-uat
+          environment: uat
+          stacks: EcrStack EcsFargateStack S3Stack
+          context: &context
+            - shared-github-token
+            - shared-datadog-token
+            - shared-gemfury-tokens
+            - enogen-cicd
+          filters: &filters-uat            
+            tags:
+              only: /^releases\/uat\/v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+      - hold:
+          requires:
+            - deploy-infra-uat
+          type: approval
+          filters:
+            tags:
+              only: /^releases\/uat\/v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+      - deploy-stacks:
+          requires:
+            - hold
+          name: deploy-services-uat
+          profile: enogen-uat
+          environment: uat
+          stacks: EcsFargateServiceStack CloudFrontStack
+          context: *context
+          filters: *filters-uat
+
+      - deploy-all:
+          name: deploy-dev
+          profile: enogen-dev
+          environment: dev
+          context: *context
+          filters: &filters-dev
+            tags:
+              only: /^releases\/dev\/v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+  production:
+    jobs:
+      - deploy-stacks:
+          name: deploy-infra-prod
+          profile: enogen-prod
+          environment: prod
+          stacks: EcrStack EcsFargateStack S3Stack
+          context: &context
+            - shared-github-token
+            - shared-datadog-token
+            - shared-gemfury-tokens
+            - enogen-cicd            
+          filters: &filters-prod
+            tags:
+              only: /^releases\/prod\/v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+      - hold:
+          requires:
+            - deploy-infra-prod
+          type: approval
+          filters:
+            tags:
+              only: /^releases\/prod\/v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/
+      - deploy-stacks:
+          requires:
+            - hold
+          name: deploy-services-prod
+          profile: enogen-prod
+          environment: prod
+          stacks: EcsFargateServiceStack CloudFrontStack
+          context: *context
+          filters: *filters-prod

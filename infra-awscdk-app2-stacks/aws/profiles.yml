@@ -1,0 +1,10 @@
+profiles:
+  - name: enogen-dev
+    account: 990176370942
+    role: CICD
+
+  - name: enogen-prod
+    account: 613836678580
+    role: CICD
+
+ 

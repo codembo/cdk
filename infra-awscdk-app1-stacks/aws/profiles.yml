@@ -1,0 +1,12 @@
+profiles:
+  - name: experiencia-nidera-dev
+    account: 240761904883
+    role: CICD
+
+  - name: experiencia-nidera-uat
+    account: 905993605631
+    role: CICD
+
+  - name: experiencia-nidera-prod
+    account: 457094916147
+    role: CICD

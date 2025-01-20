@@ -1,12 +1,10 @@
 profiles:
-  - name: experiencia-nidera-dev
-    account: 240761904883
+  - name: <profile-name>
+    account: <your-acccoutid>
     role: CICD
 
-  - name: experiencia-nidera-uat
-    account: 905993605631
+  - name: <profile-name>
+    account: <your-acccoutid>
     role: CICD
 
-  - name: experiencia-nidera-prod
-    account: 457094916147
-    role: CICD
+ 

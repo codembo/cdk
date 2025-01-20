@@ -1,0 +1,2 @@
+include packages/eks_cluster/addons/argocd/*
+include packages/eks_cluster/addons/karpenter/*

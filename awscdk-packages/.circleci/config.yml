@@ -1,0 +1,34 @@
+version: 2.1
+
+orbs:
+  python: circleci/python@2.1.1
+  sonarcloud: sonarsource/sonarcloud@2.0.0
+  gh: circleci/github-cli@2.2.0
+
+jobs:
+  publish-gemfury-release:
+    docker:
+      - image: cimg/python:3.11.8-node
+    steps:
+      - checkout
+      - python/install-packages:
+          pkg-manager: pip
+      - run:
+          command: pip install setuptools
+      - run:
+          name: "Create package dist"
+          command: python3 setup.py sdist
+      - run:
+          name: "Publish package on GemFury"
+          command: "curl -F package=@dist/infra-awscdk-devops-packages-0.1.61.tar.gz https://${FURY_PUSH_TOKEN}@push.fury.io/<your-company>/"
+
+workflows:
+  main:
+    jobs:
+      - publish-gemfury-release:
+          context: shared-gemfury-tokens
+          filters:
+            tags:
+              only: /^release\/v\d+\.\d+\.\d+$/
+            branches:
+              ignore: /.*/

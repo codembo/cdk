@@ -1,0 +1,20 @@
+settings:
+  clusterName: ${EKS_CLUSTER_NAME}
+  interruptionQueue: ${EKS_CLUSTER_NAME}
+controller:
+  resources:
+    requests:
+      cpu: 1
+      memory: 1Gi
+    limits:
+      cpu: 1
+      memory: 1Gi
+serviceAccount:
+  # -- Specifies if a ServiceAccount should be created.
+  create: true
+  # -- The name of the ServiceAccount to use.
+  # If not set and create is true, a name is generated using the fullname template.
+  name: "karpenter"
+  # -- Additional annotations for the ServiceAccount.
+  annotations:
+    eks.amazonaws.com/role-arn: ${KARPENTER_ROLE_ARN}

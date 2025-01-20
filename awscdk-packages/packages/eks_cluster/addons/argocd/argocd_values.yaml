@@ -1,0 +1,68 @@
+global:
+  domain: ${ARGOCD_DOMAIN}
+  addPrometheusAnnotations: true
+
+configs:
+  params:
+    server.insecure: true
+
+certificate:
+  enabled: true
+
+server:
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/force-ssl-redirect: "false"
+      nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
+  ingressGrpc:
+    enabled: true
+    ingressClassName: nginx
+  metrics:
+    enabled: true
+#  podAnnotations:
+#    ad.datadoghq.com/argocd-server.checks: |
+#      {
+#        "argocd": {
+#          "init_config": {},
+#          "instances": [
+#            {
+#              "api_server_endpoint": "http://%%host%%:8083/metrics"
+#            }
+#          ]
+#        }
+#      }
+
+controller:
+  replicas: 2
+  metrics:
+    enabled: true
+#  podAnnotations:
+#    ad.datadoghq.com/argocd-application-controller.checks: |
+#      {
+#        "argocd": {
+#          "init_config": {},
+#          "instances": [
+#            {
+#              "app_controller_endpoint": "http://%%host%%:8082/metrics"
+#            }
+#          ]
+#        }
+#      }
+
+repoServer:
+  metrics:
+    enabled: true
+#  podAnnotations:
+#    ad.datadoghq.com/argocd-repo-server.checks: |
+#      {
+#        "argocd": {
+#          "init_config": {},
+#          "instances": [
+#            {
+#              "repo_server_endpoint": "http://%%host%%:8084/metrics"
+#            }
+#          ]
+#        }
+#      }
